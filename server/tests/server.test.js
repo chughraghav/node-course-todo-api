@@ -128,11 +128,11 @@ describe('DELETE /todos/:id', () => {
         });
   });
 
-  it('should not remove a todo by other user', (done) => {
+  it('should not remove a todo created by other user', (done) => {
     var hexId = todos[1]._id.toHexString();
     request(app)
       .delete(`/todos/${hexId}`)
-      .set('x-auth', users[1].tokens[0].token)
+      .set('x-auth', users[0].tokens[0].token)
       .expect(404)
       .end((err,res) => {
           if(err){
@@ -181,7 +181,7 @@ describe('PATCH /todos/:id', () => {
         expect(res.body.todo.text).toBe('Test Update');
         expect(res.body.todo.completed).toBe(true);
         // expect(res.body.todo.completedAt).toBeA('number');
-        expect(typeOf(res.body.todo.completedAt)).toBe('number');
+        expect(typeof res.body.todo.completedAt).toBe('number');
       })
       .end(done);
   });
@@ -251,9 +251,7 @@ describe('POST /users', () => {
 
     request(app)
       .post('/users')
-      .send({
-        email,password
-      })
+      .send({email, password })
       .expect(200)
       .expect((res) => {
         expect(res.headers['x-auth']).toBeTruthy();
@@ -261,14 +259,16 @@ describe('POST /users', () => {
         expect(res.body.email).toBe(email);
       })
       .end((err) => {
-        return done(err);
-      });
-
-      User.findOne({email}).then((user) => {
-        expect(user).toBeTruthy();
-        expect(user.password).not.toBe(password);
-        done();
-      }).catch(e => done(e));
+        if(err){
+            return done(err);
+        }
+        
+        User.findOne({email}).then((user) => {
+          expect(user).toBeTruthy();
+          expect(user.password).not.toBe(password);
+          done();
+      }).catch((e) => done(e));
+    });
   });
 
   it('should return validation errors if request invalid', (done) => {
@@ -311,7 +311,7 @@ describe('POST /users/login', () =>{
           return done(err);
         }
 
-        User.findById(user[1]._id).then((user) => {
+        User.findById(users[1]._id).then((user) => {
           expect(user.toObject().tokens[1]).toMatchObject({
             access : 'auth',
             token : res.headers['x-auth']
@@ -337,7 +337,7 @@ describe('POST /users/login', () =>{
           return done(err);
         }
 
-        User.findById(user[1]._id).then((user) => {
+        User.findById(users[1]._id).then((user) => {
           expect(user.tokens.length).toBe(1);
           done();
         }).catch(e => done(e));
